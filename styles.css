@@ -127,6 +127,11 @@ input:focus {
   color: var(--c1);
 }
 
+.btn-danger {
+  background: var(--danger);
+  color: var(--white);
+}
+
 .message {
   min-height: 1.1rem;
   font-size: 0.85rem;

@@ -10,6 +10,7 @@ import {
   getFirestore,
   collection,
   addDoc,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -111,10 +112,23 @@ function renderPeople() {
       <div class="person-actions">
         <button class="btn btn-ghost" data-action="select" data-id="${person.id}" type="button">Seleccionar</button>
         <button class="btn btn-ghost" data-action="edit" data-id="${person.id}" type="button">Editar</button>
+        <button class="btn btn-danger" data-action="delete" data-id="${person.id}" type="button">Eliminar</button>
       </div>
     `;
     peopleList.appendChild(item);
   });
+}
+
+async function deletePerson(personId) {
+  const contributionsRef = collection(db, "people", personId, "contributions");
+  const contributionsSnap = await getDocs(contributionsRef);
+
+  const deleteContributionTasks = contributionsSnap.docs.map((contributionDoc) =>
+    deleteDoc(doc(db, "people", personId, "contributions", contributionDoc.id))
+  );
+
+  await Promise.all(deleteContributionTasks);
+  await deleteDoc(doc(db, "people", personId));
 }
 
 function renderContributions() {
@@ -301,6 +315,31 @@ peopleList.addEventListener("click", async (event) => {
     personInitialPayment.value = "";
     cancelEditBtn.classList.remove("hidden");
     window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  if (action === "delete") {
+    const confirmed = window.confirm(`¿Eliminar a ${person.name}? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    try {
+      await deletePerson(personId);
+
+      if (selectedPerson?.id === personId) {
+        selectedPerson = null;
+        selectedContributions = [];
+        detailSection.classList.add("hidden");
+      }
+
+      if (personIdInput.value === personId) {
+        clearPersonForm();
+      }
+
+      await loadPeople();
+      showPersonMessage("Persona eliminada correctamente");
+    } catch (error) {
+      showPersonMessage("No se pudo eliminar la persona", true);
+    }
   }
 });
 
