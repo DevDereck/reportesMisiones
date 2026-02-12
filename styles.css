@@ -1,0 +1,271 @@
+:root {
+  --c1: #005461;
+  --c2: #0c7779;
+  --c3: #249e94;
+  --c4: #3bc1a8;
+  --bg: #f4fffd;
+  --text: #08353f;
+  --muted: #4d6f75;
+  --white: #ffffff;
+  --danger: #a32929;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top left, #d8fffa 0%, var(--bg) 45%, #ecfffb 100%);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100dvh;
+  padding: 1rem;
+}
+
+.card {
+  border: 1px solid rgba(12, 119, 121, 0.15);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 30px rgba(0, 84, 97, 0.1);
+  backdrop-filter: blur(6px);
+  animation: rise 360ms ease;
+}
+
+.card-login {
+  max-width: 28rem;
+  margin: 2rem auto;
+  padding: 1.25rem;
+}
+
+.brand-wrap {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.brand-logo {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 0.5rem;
+}
+
+.brand-wrap p {
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--c1);
+}
+
+input {
+  height: 2.6rem;
+  border: 1px solid rgba(12, 119, 121, 0.25);
+  border-radius: 0.75rem;
+  padding: 0 0.85rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--c3);
+  box-shadow: 0 0 0 3px rgba(59, 193, 168, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn {
+  border: 0;
+  border-radius: 0.75rem;
+  padding: 0.7rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--c2), var(--c4));
+  color: var(--white);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, var(--c1), var(--c3));
+  color: var(--white);
+}
+
+.btn-ghost {
+  background: rgba(12, 119, 121, 0.08);
+  color: var(--c1);
+}
+
+.message {
+  min-height: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+.topbar {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar p {
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.grid-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid-layout .card,
+#detailSection {
+  padding: 1rem;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.people-list {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.7rem;
+  max-height: 25rem;
+  overflow: auto;
+}
+
+.person-item {
+  border: 1px solid rgba(12, 119, 121, 0.2);
+  border-radius: 0.8rem;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+  background: rgba(59, 193, 168, 0.06);
+}
+
+.person-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.person-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.detail-header p {
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.inline-form {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(12, 119, 121, 0.2);
+  border-radius: 0.8rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+thead {
+  background: rgba(36, 158, 148, 0.16);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.7rem;
+  border-bottom: 1px solid rgba(12, 119, 121, 0.12);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.visible {
+  display: block;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    padding: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .grid-layout {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .inline-form {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+  }
+}

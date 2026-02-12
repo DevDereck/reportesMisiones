@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control de Misiones</title>
+    <meta name="description" content="Sistema de control de ofrendas para misiones" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="loginSection" class="card card-login visible">
+        <div class="brand-wrap">
+          <img src="assets/icpa_l.png" alt="Logo Misiones" class="brand-logo" />
+          <h1>Control de Misiones</h1>
+          <p>Acceso administrativo</p>
+        </div>
+
+        <form id="loginForm" class="stack" autocomplete="off">
+          <label>
+            Usuario
+            <input id="username" name="username" type="text" required />
+          </label>
+          <label>
+            Contraseña
+            <input id="password" name="password" type="password" required />
+          </label>
+          <button type="submit" class="btn btn-primary">Ingresar</button>
+          <p id="loginMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section id="dashboardSection" class="hidden">
+        <header class="topbar card">
+          <div>
+            <h2>Panel de Misiones</h2>
+            <p id="welcomeText">Administrador</p>
+          </div>
+          <button id="logoutBtn" class="btn btn-ghost" type="button">Cerrar sesión</button>
+        </header>
+
+        <section class="grid-layout">
+          <article class="card">
+            <h3 id="personFormTitle">Registrar persona</h3>
+            <form id="personForm" class="stack">
+              <input type="hidden" id="personId" />
+              <label>
+                Nombre *
+                <input id="personName" type="text" required />
+              </label>
+              <label>
+                Teléfono *
+                <input id="personPhone" type="tel" required />
+              </label>
+              <label>
+                Monto prometido *
+                <input id="personPromised" type="number" min="0" step="0.01" required />
+              </label>
+              <label>
+                Abono inicial (opcional)
+                <input id="personInitialPayment" type="number" min="0" step="0.01" />
+              </label>
+
+              <div class="inline-actions">
+                <button class="btn btn-primary" type="submit">Guardar persona</button>
+                <button id="cancelEditBtn" class="btn btn-ghost hidden" type="button">Cancelar</button>
+              </div>
+              <p id="personMessage" class="message"></p>
+            </form>
+          </article>
+
+          <article class="card">
+            <h3>Personas registradas</h3>
+            <div id="peopleList" class="people-list"></div>
+          </article>
+        </section>
+
+        <section id="detailSection" class="card hidden">
+          <div class="detail-header">
+            <div>
+              <h3 id="detailName">Detalle</h3>
+              <p id="detailMeta"></p>
+            </div>
+            <button id="exportPdfBtn" class="btn btn-secondary" type="button">Exportar PDF</button>
+          </div>
+
+          <form id="monthlyForm" class="inline-form">
+            <label>
+              Mes
+              <input id="monthlyMonth" type="month" required />
+            </label>
+            <label>
+              Monto abonado
+              <input id="monthlyAmount" type="number" min="0" step="0.01" required />
+            </label>
+            <button class="btn btn-primary" type="submit">Guardar abono</button>
+          </form>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th>Prometido</th>
+                  <th>Abonado</th>
+                  <th>Saldo</th>
+                </tr>
+              </thead>
+              <tbody id="monthlyTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
