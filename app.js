@@ -369,13 +369,9 @@ monthlyForm.addEventListener("submit", async (event) => {
 
 async function loadLogoForPdf() {
   try {
-    const response = await fetch("assets/icpa_l.png");
-    const svgText = await response.text();
-    const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-
     const img = new Image();
-    img.src = url;
+    img.crossOrigin = "anonymous";
+    img.src = "assets/icpa_l.png";
 
     await new Promise((resolve, reject) => {
       img.onload = resolve;
@@ -387,7 +383,6 @@ async function loadLogoForPdf() {
     canvas.height = img.height;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0);
-    URL.revokeObjectURL(url);
 
     return canvas.toDataURL("image/png");
   } catch (error) {
