@@ -150,14 +150,15 @@ function renderContributions() {
   selectedContributions.forEach((row) => {
     const promised = Number(selectedPerson.promisedAmount || 0);
     const paid = Number(row.amount || 0);
-    const balance = promised - paid;
+    const pending = promised - paid;
+    const pendingLabel = pending > 0 ? formatCurrency(pending) : "";
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${toMonthLabel(row.month)}</td>
       <td>${formatCurrency(promised)}</td>
       <td>${formatCurrency(paid)}</td>
-      <td>${formatCurrency(balance)}</td>
+      <td>${pendingLabel}</td>
     `;
     monthlyTableBody.appendChild(tr);
   });
@@ -351,12 +352,17 @@ monthlyForm.addEventListener("submit", async (event) => {
   const month = monthlyMonth.value;
   const amount = Number(monthlyAmount.value);
 
-  if (!month || Number.isNaN(amount)) return;
+  if (!month || Number.isNaN(amount) || amount <= 0) return;
 
   try {
-    await setDoc(doc(db, "people", selectedPerson.id, "contributions", month), {
+    const monthDocRef = doc(db, "people", selectedPerson.id, "contributions", month);
+    const existingMonthSnap = await getDoc(monthDocRef);
+    const currentPaid = existingMonthSnap.exists() ? Number(existingMonthSnap.data().amount || 0) : 0;
+    const totalPaid = currentPaid + amount;
+
+    await setDoc(monthDocRef, {
       month,
-      amount,
+      amount: totalPaid,
       updatedAt: serverTimestamp()
     });
 
@@ -412,16 +418,17 @@ exportPdfBtn.addEventListener("click", async () => {
   const body = selectedContributions.map((row) => {
     const promised = Number(selectedPerson.promisedAmount || 0);
     const paid = Number(row.amount || 0);
+    const pending = promised - paid;
     return [
       toMonthLabel(row.month),
       formatCurrency(promised),
       formatCurrency(paid),
-      formatCurrency(promised - paid)
+      pending > 0 ? formatCurrency(pending) : ""
     ];
   });
 
   pdf.autoTable({
-    head: [["Mes", "Prometido", "Abonado", "Saldo"]],
+    head: [["Mes", "Prometido", "Abonado", "Pendiente"]],
     body,
     startY: 66,
     styles: { fontSize: 10 },
