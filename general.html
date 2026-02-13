@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control de Misiones - General</title>
+    <meta name="description" content="Resumen general mensual de misiones" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell general-layout">
+      <header class="topbar card">
+        <div>
+          <h2>Resumen General de Misiones</h2>
+          <p id="generalWelcome">Administrador</p>
+        </div>
+        <div class="topbar-actions">
+          <a href="index.html" class="btn btn-ghost">Panel</a>
+          <button id="generalLogoutBtn" class="btn btn-ghost" type="button">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <section class="card" style="padding: 1rem">
+        <form id="generalFilterForm" class="inline-form" style="margin-bottom: 0">
+          <label>
+            Mes
+            <input id="generalMonth" type="month" required />
+          </label>
+          <button class="btn btn-primary" type="submit">Aplicar filtro</button>
+          <button id="exportGeneralPdfBtn" class="btn btn-secondary" type="button">Exportar PDF</button>
+        </form>
+      </section>
+
+      <section class="metrics-grid">
+        <article class="card metric-card">
+          <h3>Monto esperado</h3>
+          <p id="expectedAmount" class="metric-value">₡0,00</p>
+        </article>
+        <article class="card metric-card">
+          <h3>Total ofrendado</h3>
+          <p id="offeredAmount" class="metric-value">₡0,00</p>
+        </article>
+        <article class="card metric-card">
+          <h3>Total pendiente del mes</h3>
+          <p id="pendingAmount" class="metric-value">₡0,00</p>
+        </article>
+      </section>
+
+      <section class="card" style="padding: 1rem">
+        <h3 style="margin-bottom: 0.75rem">Detalle por persona</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Persona</th>
+                <th>Prometido</th>
+                <th>Abonado</th>
+                <th>Pendiente</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="generalTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+    <script type="module" src="general.js"></script>
+  </body>
+</html>
