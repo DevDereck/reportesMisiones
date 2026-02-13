@@ -103,11 +103,12 @@ input:focus {
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+  transition: all 0.5s ease;
 }
 
 .btn:hover {
   transform: translateY(-2px);
+  font-size: 1rem;
 }
 
 .btn:active {
@@ -115,18 +116,26 @@ input:focus {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--c2), var(--c4));
+  background: var(--c4);
   color: var(--white);
+}
+
+.btn-primary:hover {
+  background: var(--c3);
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, var(--c1), var(--c3));
+  background: var(--c1);
   color: var(--white);
 }
 
+.btn-secondary:hover {
+  background: var(--c4);
+}
+
 .btn-ghost {
-  background: rgba(12, 119, 121, 0.08);
-  color: var(--c1);
+  background: var(--c2);
+  color: var(--white);
 }
 
 .btn-danger {
