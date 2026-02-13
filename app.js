@@ -401,10 +401,11 @@ exportPdfBtn.addEventListener("click", async () => {
     pdf.addImage(logoData, "PNG", 14, 10, 26, 26);
   }
 
-  pdf.setFontSize(18);
-  pdf.text("Reporte de misiones", 48, 20);
+  pdf.setFontSize(20);
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  pdf.text("Reporte de misiones", pageWidth / 2, 20, { align: "center" });
   pdf.setFontSize(11);
-  pdf.text(`Persona: ${selectedPerson.name}`, 14, 44);
+  pdf.text(`Miembro: ${selectedPerson.name}`, 14, 44);
   pdf.text(`Teléfono: ${selectedPerson.phone}`, 14, 51);
   pdf.text(`Monto prometido mensual: ${formatCurrency(selectedPerson.promisedAmount)}`, 14, 58);
 
