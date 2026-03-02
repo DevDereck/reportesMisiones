@@ -65,7 +65,18 @@ let selectedContributions = [];
 
 function formatCurrency(value) {
   const num = Number(value || 0);
-  return num.toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 2 });
+  const formattedNumber = num
+    .toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    .replace(/[\u00A0\u202F]/g, " ");
+  return `₡${formattedNumber}`;
+}
+
+function formatCurrencyForPdf(value) {
+  const num = Number(value || 0);
+  const formattedNumber = num
+    .toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    .replace(/[\u00A0\u202F]/g, " ");
+  return `CRC ${formattedNumber}`;
 }
 
 function showLoginError(text) {
@@ -103,6 +114,11 @@ function getCurrentMonthValue() {
   return `${y}-${m}`;
 }
 
+function getCurrentYearJanuaryValue() {
+  const year = new Date().getFullYear();
+  return `${year}-01`;
+}
+
 function monthToIndex(monthValue) {
   const [year, month] = monthValue.split("-").map(Number);
   return year * 12 + (month - 1);
@@ -115,17 +131,20 @@ function indexToMonth(index) {
 }
 
 function getStartMonthForPerson() {
+  const januaryMonth = getCurrentYearJanuaryValue();
   const createdAtDate = selectedPerson?.createdAt?.toDate?.();
   if (createdAtDate instanceof Date && !Number.isNaN(createdAtDate.getTime())) {
     const y = createdAtDate.getFullYear();
     const m = String(createdAtDate.getMonth() + 1).padStart(2, "0");
-    return `${y}-${m}`;
+    const createdMonth = `${y}-${m}`;
+    return monthToIndex(createdMonth) < monthToIndex(januaryMonth) ? januaryMonth : createdMonth;
   }
 
   if (selectedContributions.length) {
     const monthValues = selectedContributions.map((row) => row.month).filter(Boolean).sort();
     if (monthValues.length) {
-      return monthValues[0];
+      const firstMonth = monthValues[0];
+      return monthToIndex(firstMonth) < monthToIndex(januaryMonth) ? januaryMonth : firstMonth;
     }
   }
 
@@ -526,9 +545,9 @@ exportPdfBtn.addEventListener("click", async () => {
   const { totalPending, startMonth, endMonth } = getAccumulatedPending();
   pdf.text(`Miembro: ${selectedPerson.name}`, 14, 44);
   pdf.text(`Teléfono: ${selectedPerson.phone}`, 14, 51);
-  pdf.text(`Monto prometido mensual: ${formatCurrency(selectedPerson.promisedAmount)}`, 14, 58);
+  pdf.text(`Monto prometido mensual: ${formatCurrencyForPdf(selectedPerson.promisedAmount)}`, 14, 58);
   pdf.text(
-    `Pendiente acumulado (${toMonthLabel(startMonth)} - ${toMonthLabel(endMonth)}): ${formatCurrency(totalPending)}`,
+    `Pendiente acumulado (${toMonthLabel(startMonth)} - ${toMonthLabel(endMonth)}): ${formatCurrencyForPdf(totalPending)}`,
     14,
     65
   );
@@ -539,9 +558,9 @@ exportPdfBtn.addEventListener("click", async () => {
     const pending = promised - paid;
     return [
       toMonthLabel(row.month),
-      formatCurrency(promised),
-      formatCurrency(paid),
-      pending > 0 ? formatCurrency(pending) : ""
+      formatCurrencyForPdf(promised),
+      formatCurrencyForPdf(paid),
+      pending > 0 ? formatCurrencyForPdf(pending) : ""
     ];
   });
 
