@@ -45,6 +45,7 @@ const personInitialPayment = document.getElementById("personInitialPayment");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const personMessage = document.getElementById("personMessage");
 
+const peopleSearch = document.getElementById("peopleSearch");
 const peopleList = document.getElementById("peopleList");
 
 const detailSection = document.getElementById("detailSection");
@@ -93,14 +94,31 @@ function toMonthLabel(yyyymm) {
   return date.toLocaleDateString("es-CR", { month: "long", year: "numeric" });
 }
 
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function renderPeople() {
-  if (!peopleCache.length) {
+  const searchText = normalizeText((peopleSearch?.value || "").trim());
+  const visiblePeople = !searchText
+    ? peopleCache
+    : peopleCache.filter((person) => normalizeText(person.name).includes(searchText));
+
+  if (!visiblePeople.length) {
+    if (peopleCache.length) {
+      peopleList.innerHTML = "<p class='person-meta'>No se encontraron personas con ese nombre.</p>";
+      return;
+    }
+
     peopleList.innerHTML = "<p class='person-meta'>No hay personas registradas todavía.</p>";
     return;
   }
 
   peopleList.innerHTML = "";
-  peopleCache.forEach((person) => {
+  visiblePeople.forEach((person) => {
     const item = document.createElement("article");
     item.className = "person-item";
     item.innerHTML = `
@@ -175,6 +193,10 @@ async function loadPeople() {
 
   renderPeople();
 }
+
+peopleSearch.addEventListener("input", () => {
+  renderPeople();
+});
 
 async function loadPersonDetail(personId) {
   const personDocRef = doc(db, "people", personId);

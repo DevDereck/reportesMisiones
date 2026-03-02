@@ -34,7 +34,10 @@ let currentPending = 0;
 
 function formatCurrency(value) {
   const num = Number(value || 0);
-  return num.toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 2 });
+  const formattedNumber = num
+    .toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    .replace(/[\u00A0\u202F]/g, " ");
+  return `₡${formattedNumber}`;
 }
 
 function formatPercentage(value) {
