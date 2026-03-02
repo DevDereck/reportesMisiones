@@ -47,6 +47,7 @@ const personMessage = document.getElementById("personMessage");
 
 const peopleSearch = document.getElementById("peopleSearch");
 const peopleList = document.getElementById("peopleList");
+const togglePeopleBtn = document.getElementById("togglePeopleBtn");
 
 const detailSection = document.getElementById("detailSection");
 const detailName = document.getElementById("detailName");
@@ -62,6 +63,7 @@ const exportPdfBtn = document.getElementById("exportPdfBtn");
 let peopleCache = [];
 let selectedPerson = null;
 let selectedContributions = [];
+let isShowingAllPeople = false;
 
 function formatCurrency(value) {
   const num = Number(value || 0);
@@ -132,19 +134,23 @@ function indexToMonth(index) {
 
 function getStartMonthForPerson() {
   const januaryMonth = getCurrentYearJanuaryValue();
+  const startsFromRegistration = Boolean(selectedPerson?.useRegistrationStart);
+
+  if (!startsFromRegistration) {
+    return januaryMonth;
+  }
+
   const createdAtDate = selectedPerson?.createdAt?.toDate?.();
   if (createdAtDate instanceof Date && !Number.isNaN(createdAtDate.getTime())) {
     const y = createdAtDate.getFullYear();
     const m = String(createdAtDate.getMonth() + 1).padStart(2, "0");
-    const createdMonth = `${y}-${m}`;
-    return monthToIndex(createdMonth) < monthToIndex(januaryMonth) ? januaryMonth : createdMonth;
+    return `${y}-${m}`;
   }
 
   if (selectedContributions.length) {
     const monthValues = selectedContributions.map((row) => row.month).filter(Boolean).sort();
     if (monthValues.length) {
-      const firstMonth = monthValues[0];
-      return monthToIndex(firstMonth) < monthToIndex(januaryMonth) ? januaryMonth : firstMonth;
+      return monthValues[0];
     }
   }
 
@@ -198,9 +204,19 @@ function normalizeText(value) {
 
 function renderPeople() {
   const searchText = normalizeText((peopleSearch?.value || "").trim());
-  const visiblePeople = !searchText
+  const filteredPeople = !searchText
     ? peopleCache
     : peopleCache.filter((person) => normalizeText(person.name).includes(searchText));
+
+  const canCollapse = !searchText && filteredPeople.length > 2;
+  const visiblePeople = canCollapse && !isShowingAllPeople ? filteredPeople.slice(0, 2) : filteredPeople;
+
+  if (canCollapse) {
+    togglePeopleBtn.classList.remove("hidden");
+    togglePeopleBtn.textContent = isShowingAllPeople ? "Ver menos" : "Ver todos";
+  } else {
+    togglePeopleBtn.classList.add("hidden");
+  }
 
   if (!visiblePeople.length) {
     if (peopleCache.length) {
@@ -296,6 +312,12 @@ async function loadPeople() {
 }
 
 peopleSearch.addEventListener("input", () => {
+  isShowingAllPeople = false;
+  renderPeople();
+});
+
+togglePeopleBtn.addEventListener("click", () => {
+  isShowingAllPeople = !isShowingAllPeople;
   renderPeople();
 });
 
@@ -385,6 +407,7 @@ personForm.addEventListener("submit", async (event) => {
     } else {
       const created = await addDoc(collection(db, "people"), {
         ...payload,
+        useRegistrationStart: true,
         createdAt: serverTimestamp()
       });
 

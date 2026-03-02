@@ -211,6 +211,21 @@ input:focus {
   font-size: 0.9rem;
 }
 
+.toggle-people-btn {
+  margin-top: 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--c2);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+}
+
+.toggle-people-btn:hover {
+  color: var(--c1);
+}
+
 .person-item {
   border: 1px solid rgba(12, 119, 121, 0.2);
   border-radius: 0.8rem;
