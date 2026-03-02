@@ -97,8 +97,13 @@
               <h3 id="detailName">Detalle</h3>
               <p id="detailMeta"></p>
             </div>
-            <button id="exportPdfBtn" class="btn btn-secondary" type="button">Exportar PDF</button>
+            <div class="detail-actions">
+              <button id="viewTotalPendingBtn" class="btn btn-ghost" type="button">Ver todo lo pendiente</button>
+              <button id="exportPdfBtn" class="btn btn-secondary" type="button">Exportar PDF</button>
+            </div>
           </div>
+
+          <p id="totalPendingInfo" class="pending-summary hidden"></p>
 
           <form id="monthlyForm" class="inline-form">
             <label>

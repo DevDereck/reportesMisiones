@@ -55,6 +55,8 @@ const monthlyForm = document.getElementById("monthlyForm");
 const monthlyMonth = document.getElementById("monthlyMonth");
 const monthlyAmount = document.getElementById("monthlyAmount");
 const monthlyTableBody = document.getElementById("monthlyTableBody");
+const viewTotalPendingBtn = document.getElementById("viewTotalPendingBtn");
+const totalPendingInfo = document.getElementById("totalPendingInfo");
 const exportPdfBtn = document.getElementById("exportPdfBtn");
 
 let peopleCache = [];
@@ -92,6 +94,80 @@ function toMonthLabel(yyyymm) {
   const [year, month] = yyyymm.split("-");
   const date = new Date(Number(year), Number(month) - 1, 1);
   return date.toLocaleDateString("es-CR", { month: "long", year: "numeric" });
+}
+
+function getCurrentMonthValue() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function monthToIndex(monthValue) {
+  const [year, month] = monthValue.split("-").map(Number);
+  return year * 12 + (month - 1);
+}
+
+function indexToMonth(index) {
+  const year = Math.floor(index / 12);
+  const month = String((index % 12) + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function getStartMonthForPerson() {
+  const createdAtDate = selectedPerson?.createdAt?.toDate?.();
+  if (createdAtDate instanceof Date && !Number.isNaN(createdAtDate.getTime())) {
+    const y = createdAtDate.getFullYear();
+    const m = String(createdAtDate.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  }
+
+  if (selectedContributions.length) {
+    const monthValues = selectedContributions.map((row) => row.month).filter(Boolean).sort();
+    if (monthValues.length) {
+      return monthValues[0];
+    }
+  }
+
+  return getCurrentMonthValue();
+}
+
+function getAccumulatedPending() {
+  if (!selectedPerson) {
+    return { totalPending: 0, startMonth: "", endMonth: "" };
+  }
+
+  const promised = Number(selectedPerson.promisedAmount || 0);
+  const startMonth = getStartMonthForPerson();
+  const endMonth = getCurrentMonthValue();
+
+  const startIndex = monthToIndex(startMonth);
+  const endIndex = monthToIndex(endMonth);
+  const finalIndex = Math.max(startIndex, endIndex);
+
+  const paymentsByMonth = selectedContributions.reduce((accumulator, row) => {
+    if (row.month) {
+      accumulator[row.month] = Number(row.amount || 0);
+    }
+    return accumulator;
+  }, {});
+
+  let totalPending = 0;
+  for (let index = startIndex; index <= finalIndex; index += 1) {
+    const monthValue = indexToMonth(index);
+    const paid = Number(paymentsByMonth[monthValue] || 0);
+    totalPending += Math.max(promised - paid, 0);
+  }
+
+  return { totalPending, startMonth, endMonth };
+}
+
+function showAccumulatedPending() {
+  if (!selectedPerson) return;
+
+  const { totalPending, startMonth, endMonth } = getAccumulatedPending();
+  totalPendingInfo.textContent = `Pendiente acumulado de ${toMonthLabel(startMonth)} a ${toMonthLabel(endMonth)}: ${formatCurrency(totalPending)}`;
+  totalPendingInfo.classList.remove("hidden");
 }
 
 function normalizeText(value) {
@@ -152,6 +228,8 @@ async function deletePerson(personId) {
 function renderContributions() {
   if (!selectedPerson) {
     detailSection.classList.add("hidden");
+    totalPendingInfo.classList.add("hidden");
+    totalPendingInfo.textContent = "";
     return;
   }
 
@@ -180,6 +258,10 @@ function renderContributions() {
     `;
     monthlyTableBody.appendChild(tr);
   });
+
+  if (!totalPendingInfo.classList.contains("hidden")) {
+    showAccumulatedPending();
+  }
 }
 
 async function loadPeople() {
@@ -196,6 +278,10 @@ async function loadPeople() {
 
 peopleSearch.addEventListener("input", () => {
   renderPeople();
+});
+
+viewTotalPendingBtn.addEventListener("click", () => {
+  showAccumulatedPending();
 });
 
 async function loadPersonDetail(personId) {
@@ -251,6 +337,8 @@ logoutBtn.addEventListener("click", async () => {
   selectedPerson = null;
   selectedContributions = [];
   detailSection.classList.add("hidden");
+  totalPendingInfo.classList.add("hidden");
+  totalPendingInfo.textContent = "";
 });
 
 personForm.addEventListener("submit", async (event) => {
@@ -352,6 +440,8 @@ peopleList.addEventListener("click", async (event) => {
         selectedPerson = null;
         selectedContributions = [];
         detailSection.classList.add("hidden");
+        totalPendingInfo.classList.add("hidden");
+        totalPendingInfo.textContent = "";
       }
 
       if (personIdInput.value === personId) {
@@ -433,9 +523,15 @@ exportPdfBtn.addEventListener("click", async () => {
   const pageWidth = pdf.internal.pageSize.getWidth();
   pdf.text("Reporte de misiones", pageWidth / 2, 20, { align: "center" });
   pdf.setFontSize(11);
+  const { totalPending, startMonth, endMonth } = getAccumulatedPending();
   pdf.text(`Miembro: ${selectedPerson.name}`, 14, 44);
   pdf.text(`Teléfono: ${selectedPerson.phone}`, 14, 51);
   pdf.text(`Monto prometido mensual: ${formatCurrency(selectedPerson.promisedAmount)}`, 14, 58);
+  pdf.text(
+    `Pendiente acumulado (${toMonthLabel(startMonth)} - ${toMonthLabel(endMonth)}): ${formatCurrency(totalPending)}`,
+    14,
+    65
+  );
 
   const body = selectedContributions.map((row) => {
     const promised = Number(selectedPerson.promisedAmount || 0);
@@ -452,7 +548,7 @@ exportPdfBtn.addEventListener("click", async () => {
   pdf.autoTable({
     head: [["Mes", "Prometido", "Abonado", "Pendiente"]],
     body,
-    startY: 66,
+    startY: 73,
     styles: { fontSize: 10 },
     headStyles: { fillColor: [12, 119, 121] }
   });
