@@ -22,6 +22,7 @@ const generalMonth = document.getElementById("generalMonth");
 const expectedAmount = document.getElementById("expectedAmount");
 const offeredAmount = document.getElementById("offeredAmount");
 const pendingAmount = document.getElementById("pendingAmount");
+const pendingPercentage = document.getElementById("pendingPercentage");
 const generalTableBody = document.getElementById("generalTableBody");
 const exportGeneralPdfBtn = document.getElementById("exportGeneralPdfBtn");
 
@@ -34,6 +35,11 @@ let currentPending = 0;
 function formatCurrency(value) {
   const num = Number(value || 0);
   return num.toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 2 });
+}
+
+function formatPercentage(value) {
+  const num = Number(value || 0);
+  return `${num.toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 }
 
 function toMonthLabel(yyyymm) {
@@ -108,9 +114,12 @@ async function buildGeneralData(month) {
   currentOffered = offered;
   currentPending = pending;
 
+  const pendingPercent = expected > 0 ? (pending / expected) * 100 : 0;
+
   expectedAmount.textContent = formatCurrency(expected);
   offeredAmount.textContent = formatCurrency(offered);
   pendingAmount.textContent = formatCurrency(pending);
+  pendingPercentage.textContent = formatPercentage(pendingPercent);
   renderGeneralTable(rows);
 }
 
@@ -154,10 +163,12 @@ function exportGeneralPdf() {
     pdf.text("Reporte general de misiones", pageWidth / 2, 20, { align: "center" });
 
     pdf.setFontSize(11);
+    const pendingPercent = currentExpected > 0 ? (currentPending / currentExpected) * 100 : 0;
     pdf.text(`Mes: ${monthLabel}`, 14, 44);
     pdf.text(`Monto esperado: ${formatCurrency(currentExpected)}`, 14, 51);
     pdf.text(`Total ofrendado: ${formatCurrency(currentOffered)}`, 14, 58);
     pdf.text(`Total pendiente del mes: ${formatCurrency(currentPending)}`, 14, 65);
+    pdf.text(`Porcentaje adeudado: ${formatPercentage(pendingPercent)}`, 14, 72);
 
     const body = currentRows.map((row) => {
       const pendingLabel = row.pending > 0 ? formatCurrency(row.pending) : "";
@@ -173,7 +184,7 @@ function exportGeneralPdf() {
     pdf.autoTable({
       head: [["Persona", "Prometido", "Abonado", "Pendiente", "Estado"]],
       body,
-      startY: 73,
+      startY: 80,
       styles: { fontSize: 10 },
       headStyles: { fillColor: [12, 119, 121] }
     });
