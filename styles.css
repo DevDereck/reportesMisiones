@@ -185,6 +185,10 @@ input:focus {
   padding: 1rem;
 }
 
+#detailSection {
+  margin-top: 0.5rem;
+}
+
 .inline-actions {
   display: flex;
   gap: 0.6rem;

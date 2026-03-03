@@ -569,11 +569,23 @@ exportPdfBtn.addEventListener("click", async () => {
   pdf.text(`Miembro: ${selectedPerson.name}`, 14, 44);
   pdf.text(`Teléfono: ${selectedPerson.phone}`, 14, 51);
   pdf.text(`Monto prometido mensual: ${formatCurrencyForPdf(selectedPerson.promisedAmount)}`, 14, 58);
+
+  if (totalPending > 0) {
+    pdf.setTextColor(163, 41, 41);
+    pdf.setFont(undefined, "bold");
+  } else {
+    pdf.setTextColor(8, 53, 63);
+    pdf.setFont(undefined, "normal");
+  }
+
   pdf.text(
     `Pendiente acumulado (${toMonthLabel(startMonth)} - ${toMonthLabel(endMonth)}): ${formatCurrencyForPdf(totalPending)}`,
     14,
     65
   );
+
+  pdf.setTextColor(8, 53, 63);
+  pdf.setFont(undefined, "normal");
 
   const body = selectedContributions.map((row) => {
     const promised = Number(selectedPerson.promisedAmount || 0);
