@@ -40,6 +40,14 @@ function formatCurrency(value) {
   return `₡${formattedNumber}`;
 }
 
+function formatCurrencyForPdf(value) {
+  const num = Number(value || 0);
+  const formattedNumber = num
+    .toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    .replace(/[\u00A0\u202F]/g, " ");
+  return `CRC ${formattedNumber}`;
+}
+
 function formatPercentage(value) {
   const num = Number(value || 0);
   return `${num.toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
@@ -168,17 +176,17 @@ function exportGeneralPdf() {
     pdf.setFontSize(11);
     const pendingPercent = currentExpected > 0 ? (currentPending / currentExpected) * 100 : 0;
     pdf.text(`Mes: ${monthLabel}`, 14, 44);
-    pdf.text(`Monto esperado: ${formatCurrency(currentExpected)}`, 14, 51);
-    pdf.text(`Total ofrendado: ${formatCurrency(currentOffered)}`, 14, 58);
-    pdf.text(`Total pendiente del mes: ${formatCurrency(currentPending)}`, 14, 65);
+    pdf.text(`Monto esperado: ${formatCurrencyForPdf(currentExpected)}`, 14, 51);
+    pdf.text(`Total ofrendado: ${formatCurrencyForPdf(currentOffered)}`, 14, 58);
+    pdf.text(`Total pendiente del mes: ${formatCurrencyForPdf(currentPending)}`, 14, 65);
     pdf.text(`Porcentaje adeudado: ${formatPercentage(pendingPercent)}`, 14, 72);
 
     const body = currentRows.map((row) => {
-      const pendingLabel = row.pending > 0 ? formatCurrency(row.pending) : "";
+      const pendingLabel = row.pending > 0 ? formatCurrencyForPdf(row.pending) : "";
       return [
         row.name,
-        formatCurrency(row.promised),
-        formatCurrency(row.paid),
+        formatCurrencyForPdf(row.promised),
+        formatCurrencyForPdf(row.paid),
         pendingLabel,
         row.pending > 0 ? "Con pendiente" : "Completo"
       ];
