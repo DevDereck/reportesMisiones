@@ -115,7 +115,8 @@
               Monto abonado
               <input id="monthlyAmount" type="number" min="0" step="0.01" required />
             </label>
-            <button class="btn btn-primary" type="submit">Guardar abono</button>
+            <button id="monthlySubmitBtn" class="btn btn-primary" type="submit">Guardar abono</button>
+            <button id="cancelMonthlyEditBtn" class="btn btn-ghost hidden" type="button">Cancelar edición</button>
           </form>
 
           <div class="table-wrap">
@@ -126,6 +127,7 @@
                   <th>Prometido</th>
                   <th>Abonado</th>
                   <th>Pendiente</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="monthlyTableBody"></tbody>

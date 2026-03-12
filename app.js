@@ -55,6 +55,8 @@ const detailMeta = document.getElementById("detailMeta");
 const monthlyForm = document.getElementById("monthlyForm");
 const monthlyMonth = document.getElementById("monthlyMonth");
 const monthlyAmount = document.getElementById("monthlyAmount");
+const monthlySubmitBtn = document.getElementById("monthlySubmitBtn");
+const cancelMonthlyEditBtn = document.getElementById("cancelMonthlyEditBtn");
 const monthlyTableBody = document.getElementById("monthlyTableBody");
 const viewTotalPendingBtn = document.getElementById("viewTotalPendingBtn");
 const totalPendingInfo = document.getElementById("totalPendingInfo");
@@ -64,6 +66,7 @@ let peopleCache = [];
 let selectedPerson = null;
 let selectedContributions = [];
 let isShowingAllPeople = false;
+let editingContributionMonth = "";
 
 function formatCurrency(value) {
   const num = Number(value || 0);
@@ -100,6 +103,24 @@ function clearPersonForm() {
   personIdInput.value = "";
   personFormTitle.textContent = "Registrar persona";
   cancelEditBtn.classList.add("hidden");
+}
+
+function resetMonthlyForm() {
+  monthlyForm.reset();
+  editingContributionMonth = "";
+  monthlyMonth.disabled = false;
+  monthlySubmitBtn.textContent = "Guardar abono";
+  cancelMonthlyEditBtn.classList.add("hidden");
+}
+
+function startMonthlyEdit(row) {
+  editingContributionMonth = row.month;
+  monthlyMonth.value = row.month;
+  monthlyMonth.disabled = true;
+  monthlyAmount.value = Number(row.amount || 0);
+  monthlySubmitBtn.textContent = "Actualizar abono";
+  cancelMonthlyEditBtn.classList.remove("hidden");
+  monthlyAmount.focus();
 }
 
 function toMonthLabel(yyyymm) {
@@ -265,6 +286,7 @@ function renderContributions() {
     detailSection.classList.add("hidden");
     totalPendingInfo.classList.add("hidden");
     totalPendingInfo.textContent = "";
+    resetMonthlyForm();
     return;
   }
 
@@ -273,7 +295,7 @@ function renderContributions() {
   detailMeta.textContent = `Tel: ${selectedPerson.phone} | Prometido mensual: ${formatCurrency(selectedPerson.promisedAmount)}`;
 
   if (!selectedContributions.length) {
-    monthlyTableBody.innerHTML = "<tr><td colspan='4'>No hay abonos registrados</td></tr>";
+    monthlyTableBody.innerHTML = "<tr><td colspan='5'>No hay abonos registrados</td></tr>";
     return;
   }
 
@@ -290,6 +312,12 @@ function renderContributions() {
       <td>${formatCurrency(promised)}</td>
       <td>${formatCurrency(paid)}</td>
       <td>${pendingLabel}</td>
+      <td>
+        <div class="inline-actions">
+          <button class="btn btn-ghost" data-contribution-action="edit" data-month="${row.month}" type="button">Editar</button>
+          <button class="btn btn-danger" data-contribution-action="delete" data-month="${row.month}" type="button">Eliminar</button>
+        </div>
+      </td>
     `;
     monthlyTableBody.appendChild(tr);
   });
@@ -340,6 +368,7 @@ async function loadPersonDetail(personId) {
   const contributionSnap = await getDocs(contributionsRef);
   selectedContributions = contributionSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+  resetMonthlyForm();
   renderContributions();
 }
 
@@ -380,6 +409,7 @@ logoutBtn.addEventListener("click", async () => {
   detailSection.classList.add("hidden");
   totalPendingInfo.classList.add("hidden");
   totalPendingInfo.textContent = "";
+  resetMonthlyForm();
 });
 
 personForm.addEventListener("submit", async (event) => {
@@ -506,24 +536,80 @@ monthlyForm.addEventListener("submit", async (event) => {
   const month = monthlyMonth.value;
   const amount = Number(monthlyAmount.value);
 
-  if (!month || Number.isNaN(amount) || amount <= 0) return;
+  if (!month || Number.isNaN(amount) || amount < 0) return;
 
   try {
-    const monthDocRef = doc(db, "people", selectedPerson.id, "contributions", month);
-    const existingMonthSnap = await getDoc(monthDocRef);
-    const currentPaid = existingMonthSnap.exists() ? Number(existingMonthSnap.data().amount || 0) : 0;
-    const totalPaid = currentPaid + amount;
+    if (editingContributionMonth) {
+      const monthDocRef = doc(db, "people", selectedPerson.id, "contributions", editingContributionMonth);
 
-    await setDoc(monthDocRef, {
-      month,
-      amount: totalPaid,
-      updatedAt: serverTimestamp()
-    });
+      await setDoc(monthDocRef, {
+        month: editingContributionMonth,
+        amount,
+        updatedAt: serverTimestamp()
+      });
 
-    monthlyForm.reset();
+      showPersonMessage("Abono actualizado correctamente");
+    } else {
+      if (amount <= 0) return;
+
+      const monthDocRef = doc(db, "people", selectedPerson.id, "contributions", month);
+      const existingMonthSnap = await getDoc(monthDocRef);
+      const currentPaid = existingMonthSnap.exists() ? Number(existingMonthSnap.data().amount || 0) : 0;
+      const totalPaid = currentPaid + amount;
+
+      await setDoc(monthDocRef, {
+        month,
+        amount: totalPaid,
+        updatedAt: serverTimestamp()
+      });
+
+      showPersonMessage("Abono guardado correctamente");
+    }
+
+    resetMonthlyForm();
     await loadPersonDetail(selectedPerson.id);
   } catch (error) {
     showPersonMessage("Error guardando el abono mensual", true);
+  }
+});
+
+cancelMonthlyEditBtn.addEventListener("click", () => {
+  resetMonthlyForm();
+});
+
+monthlyTableBody.addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+
+  const action = target.dataset.contributionAction;
+  const month = target.dataset.month;
+  if (!action || !month || !selectedPerson) return;
+
+  const row = selectedContributions.find((contribution) => contribution.month === month);
+  if (!row) return;
+
+  if (action === "edit") {
+    startMonthlyEdit(row);
+    return;
+  }
+
+  if (action === "delete") {
+    const monthLabel = toMonthLabel(month);
+    const confirmed = window.confirm(
+      `¿Eliminar el abono de ${monthLabel}? Esta acción no se puede deshacer.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteDoc(doc(db, "people", selectedPerson.id, "contributions", month));
+      if (editingContributionMonth === month) {
+        resetMonthlyForm();
+      }
+      await loadPersonDetail(selectedPerson.id);
+      showPersonMessage("Abono eliminado correctamente");
+    } catch (error) {
+      showPersonMessage("No se pudo eliminar el abono", true);
+    }
   }
 });
 
@@ -622,6 +708,7 @@ onAuthStateChanged(auth, async (user) => {
     dashboardSection.classList.add("hidden");
     loginForm.reset();
     clearPersonForm();
+    resetMonthlyForm();
     peopleList.innerHTML = "";
   }
 });
