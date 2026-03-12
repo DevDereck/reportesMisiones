@@ -22,6 +22,7 @@ const generalMonth = document.getElementById("generalMonth");
 const expectedAmount = document.getElementById("expectedAmount");
 const offeredAmount = document.getElementById("offeredAmount");
 const pendingAmount = document.getElementById("pendingAmount");
+const achievedPercentage = document.getElementById("achievedPercentage");
 const pendingPercentage = document.getElementById("pendingPercentage");
 const generalTableBody = document.getElementById("generalTableBody");
 const exportGeneralPdfBtn = document.getElementById("exportGeneralPdfBtn");
@@ -126,10 +127,12 @@ async function buildGeneralData(month) {
   currentPending = pending;
 
   const pendingPercent = expected > 0 ? (pending / expected) * 100 : 0;
+  const achievedPercent = expected > 0 ? (offered / expected) * 100 : 0;
 
   expectedAmount.textContent = formatCurrency(expected);
   offeredAmount.textContent = formatCurrency(offered);
   pendingAmount.textContent = formatCurrency(pending);
+  achievedPercentage.textContent = formatPercentage(achievedPercent);
   pendingPercentage.textContent = formatPercentage(pendingPercent);
   renderGeneralTable(rows);
 }
@@ -175,11 +178,16 @@ function exportGeneralPdf() {
 
     pdf.setFontSize(11);
     const pendingPercent = currentExpected > 0 ? (currentPending / currentExpected) * 100 : 0;
+    const achievedPercent = currentExpected > 0 ? (currentOffered / currentExpected) * 100 : 0;
     pdf.text(`Mes: ${monthLabel}`, 14, 44);
     pdf.text(`Monto esperado: ${formatCurrencyForPdf(currentExpected)}`, 14, 51);
     pdf.text(`Total ofrendado: ${formatCurrencyForPdf(currentOffered)}`, 14, 58);
-    pdf.text(`Total pendiente del mes: ${formatCurrencyForPdf(currentPending)}`, 14, 65);
-    pdf.text(`Porcentaje adeudado: ${formatPercentage(pendingPercent)}`, 14, 72);
+    pdf.setTextColor(14, 130, 53);
+    pdf.text(`Porcentaje alcanzado: ${formatPercentage(achievedPercent)}`, 14, 65);
+    pdf.setTextColor(163, 41, 41);
+    pdf.text(`Total pendiente del mes: ${formatCurrencyForPdf(currentPending)}`, 14, 72);
+    pdf.text(`Porcentaje adeudado: ${formatPercentage(pendingPercent)}`, 14, 79);
+    pdf.setTextColor(8, 53, 63);
 
     const body = currentRows.map((row) => {
       const pendingLabel = row.pending > 0 ? formatCurrencyForPdf(row.pending) : "";
@@ -195,7 +203,7 @@ function exportGeneralPdf() {
     pdf.autoTable({
       head: [["Persona", "Prometido", "Abonado", "Pendiente", "Estado"]],
       body,
-      startY: 80,
+      startY: 87,
       styles: { fontSize: 10 },
       headStyles: { fillColor: [12, 119, 121] }
     });
