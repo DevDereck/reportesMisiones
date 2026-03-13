@@ -191,10 +191,54 @@ function sanitizePromisedHistory(history) {
     .map((month) => ({ month, amount: entriesByMonth[month] }));
 }
 
+function inferLegacyPromisedAmount(person, contributions) {
+  const fallbackAmount = Number(person?.promisedAmount || 0);
+  const currentMonth = getCurrentMonthValue();
+
+  const historicalAmounts = (Array.isArray(contributions) ? contributions : [])
+    .filter((row) => isValidMonthValue(row?.month) && row.month < currentMonth)
+    .map((row) => Number(row?.amount || 0))
+    .filter((amount) => amount > 0);
+
+  if (!historicalAmounts.length) {
+    return null;
+  }
+
+  const occurrences = historicalAmounts.reduce((accumulator, amount) => {
+    accumulator[amount] = (accumulator[amount] || 0) + 1;
+    return accumulator;
+  }, {});
+
+  const inferredAmount = Number(
+    Object.keys(occurrences).sort((a, b) => {
+      const countDiff = occurrences[b] - occurrences[a];
+      if (countDiff !== 0) return countDiff;
+      return Number(b) - Number(a);
+    })[0]
+  );
+
+  if (Number.isNaN(inferredAmount) || inferredAmount === fallbackAmount) {
+    return null;
+  }
+
+  return inferredAmount;
+}
+
 function getPromisedAmountForMonth(person, monthValue) {
   const fallbackAmount = Number(person?.promisedAmount || 0);
   const history = sanitizePromisedHistory(person?.promisedHistory);
-  if (!history.length || !isValidMonthValue(monthValue)) {
+  if (!isValidMonthValue(monthValue)) {
+    return fallbackAmount;
+  }
+
+  if (!history.length) {
+    const currentMonth = getCurrentMonthValue();
+    if (monthValue < currentMonth) {
+      const inferredLegacyAmount = inferLegacyPromisedAmount(person, selectedContributions);
+      if (typeof inferredLegacyAmount === "number") {
+        return inferredLegacyAmount;
+      }
+    }
     return fallbackAmount;
   }
 
@@ -208,7 +252,7 @@ function getPromisedAmountForMonth(person, monthValue) {
   return promised;
 }
 
-function buildPromisedHistoryForUpdate(person, newPromisedAmount) {
+function buildPromisedHistoryForUpdate(person, newPromisedAmount, startMonthOverride = "") {
   const previousPromisedAmount = Number(person?.promisedAmount || 0);
   const normalizedNewAmount = Number(newPromisedAmount || 0);
   const history = sanitizePromisedHistory(person?.promisedHistory);
@@ -221,7 +265,9 @@ function buildPromisedHistoryForUpdate(person, newPromisedAmount) {
   const nextHistory = [...history];
 
   if (!nextHistory.length) {
-    const startMonth = getStartMonthForPersonData(person);
+    const startMonth = isValidMonthValue(startMonthOverride)
+      ? startMonthOverride
+      : getStartMonthForPersonData(person);
     nextHistory.push({ month: startMonth, amount: previousPromisedAmount });
   }
 
@@ -512,7 +558,32 @@ personForm.addEventListener("submit", async (event) => {
   try {
     if (id) {
       const personBeforeUpdate = peopleCache.find((item) => item.id === id) || selectedPerson || null;
-      const promisedHistory = buildPromisedHistoryForUpdate(personBeforeUpdate, payload.promisedAmount);
+      let startMonthOverride = "";
+
+      const hasHistory = sanitizePromisedHistory(personBeforeUpdate?.promisedHistory).length > 0;
+      const previousPromisedAmount = Number(personBeforeUpdate?.promisedAmount || 0);
+      const isPromisedChanging = previousPromisedAmount !== payload.promisedAmount;
+
+      if (!hasHistory && isPromisedChanging) {
+        const contributionsRef = query(
+          collection(db, "people", id, "contributions"),
+          orderBy("month", "asc")
+        );
+        const contributionSnap = await getDocs(contributionsRef);
+        const earliestContribution = contributionSnap.docs
+          .map((item) => item.data()?.month)
+          .find((monthValue) => isValidMonthValue(monthValue));
+
+        if (earliestContribution) {
+          startMonthOverride = earliestContribution;
+        }
+      }
+
+      const promisedHistory = buildPromisedHistoryForUpdate(
+        personBeforeUpdate,
+        payload.promisedAmount,
+        startMonthOverride
+      );
 
       await updateDoc(doc(db, "people", id), {
         ...payload,
