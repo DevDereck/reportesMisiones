@@ -191,12 +191,12 @@ function sanitizePromisedHistory(history) {
     .map((month) => ({ month, amount: entriesByMonth[month] }));
 }
 
-function inferLegacyPromisedAmount(person, contributions) {
+function inferLegacyPromisedAmount(person, contributions, beforeMonth = "") {
   const fallbackAmount = Number(person?.promisedAmount || 0);
-  const currentMonth = getCurrentMonthValue();
+  const upperBoundMonth = isValidMonthValue(beforeMonth) ? beforeMonth : getCurrentMonthValue();
 
   const historicalAmounts = (Array.isArray(contributions) ? contributions : [])
-    .filter((row) => isValidMonthValue(row?.month) && row.month < currentMonth)
+    .filter((row) => isValidMonthValue(row?.month) && row.month < upperBoundMonth)
     .map((row) => Number(row?.amount || 0))
     .filter((amount) => amount > 0);
 
@@ -234,10 +234,19 @@ function getPromisedAmountForMonth(person, monthValue) {
   if (!history.length) {
     const currentMonth = getCurrentMonthValue();
     if (monthValue < currentMonth) {
-      const inferredLegacyAmount = inferLegacyPromisedAmount(person, selectedContributions);
+      const inferredLegacyAmount = inferLegacyPromisedAmount(person, selectedContributions, currentMonth);
       if (typeof inferredLegacyAmount === "number") {
         return inferredLegacyAmount;
       }
+    }
+    return fallbackAmount;
+  }
+
+  const firstHistoryMonth = history[0].month;
+  if (monthValue < firstHistoryMonth) {
+    const inferredLegacyAmount = inferLegacyPromisedAmount(person, selectedContributions, firstHistoryMonth);
+    if (typeof inferredLegacyAmount === "number") {
+      return inferredLegacyAmount;
     }
     return fallbackAmount;
   }

@@ -3,8 +3,6 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import {
   getFirestore,
   collection,
-  doc,
-  getDoc,
   getDocs,
   query,
   orderBy
@@ -68,6 +66,97 @@ function getCurrentMonthValue() {
   return `${y}-${m}`;
 }
 
+function isValidMonthValue(monthValue) {
+  return /^\d{4}-\d{2}$/.test(String(monthValue || ""));
+}
+
+function sanitizePromisedHistory(history) {
+  if (!Array.isArray(history)) return [];
+
+  const entriesByMonth = history.reduce((accumulator, entry) => {
+    if (!isValidMonthValue(entry?.month)) return accumulator;
+    const amount = Number(entry?.amount);
+    if (Number.isNaN(amount)) return accumulator;
+    accumulator[entry.month] = amount;
+    return accumulator;
+  }, {});
+
+  return Object.keys(entriesByMonth)
+    .sort()
+    .map((month) => ({ month, amount: entriesByMonth[month] }));
+}
+
+function inferLegacyPromisedAmount(person, contributions, beforeMonth = "") {
+  const fallbackAmount = Number(person?.promisedAmount || 0);
+  const upperBoundMonth = isValidMonthValue(beforeMonth) ? beforeMonth : getCurrentMonthValue();
+
+  const historicalAmounts = (Array.isArray(contributions) ? contributions : [])
+    .filter((row) => isValidMonthValue(row?.month) && row.month < upperBoundMonth)
+    .map((row) => Number(row?.amount || 0))
+    .filter((amount) => amount > 0);
+
+  if (!historicalAmounts.length) {
+    return null;
+  }
+
+  const occurrences = historicalAmounts.reduce((accumulator, amount) => {
+    accumulator[amount] = (accumulator[amount] || 0) + 1;
+    return accumulator;
+  }, {});
+
+  const inferredAmount = Number(
+    Object.keys(occurrences).sort((a, b) => {
+      const countDiff = occurrences[b] - occurrences[a];
+      if (countDiff !== 0) return countDiff;
+      return Number(b) - Number(a);
+    })[0]
+  );
+
+  if (Number.isNaN(inferredAmount) || inferredAmount === fallbackAmount) {
+    return null;
+  }
+
+  return inferredAmount;
+}
+
+function getPromisedAmountForMonth(person, monthValue, contributions) {
+  const fallbackAmount = Number(person?.promisedAmount || 0);
+  const history = sanitizePromisedHistory(person?.promisedHistory);
+
+  if (!isValidMonthValue(monthValue)) {
+    return fallbackAmount;
+  }
+
+  if (!history.length) {
+    const currentMonth = getCurrentMonthValue();
+    if (monthValue < currentMonth) {
+      const inferredLegacyAmount = inferLegacyPromisedAmount(person, contributions, currentMonth);
+      if (typeof inferredLegacyAmount === "number") {
+        return inferredLegacyAmount;
+      }
+    }
+    return fallbackAmount;
+  }
+
+  const firstHistoryMonth = history[0].month;
+  if (monthValue < firstHistoryMonth) {
+    const inferredLegacyAmount = inferLegacyPromisedAmount(person, contributions, firstHistoryMonth);
+    if (typeof inferredLegacyAmount === "number") {
+      return inferredLegacyAmount;
+    }
+    return fallbackAmount;
+  }
+
+  let promised = history[0].amount;
+  history.forEach((entry) => {
+    if (entry.month <= monthValue) {
+      promised = entry.amount;
+    }
+  });
+
+  return promised;
+}
+
 function renderGeneralTable(rows) {
   if (!rows.length) {
     generalTableBody.innerHTML = "<tr><td colspan='5'>No hay personas registradas.</td></tr>";
@@ -101,10 +190,16 @@ async function buildGeneralData(month) {
   const rows = await Promise.all(
     peopleSnap.docs.map(async (personDoc) => {
       const personData = personDoc.data();
-      const promised = Number(personData.promisedAmount || 0);
-      const contributionRef = doc(db, "people", personDoc.id, "contributions", month);
-      const contributionSnap = await getDoc(contributionRef);
-      const paid = contributionSnap.exists() ? Number(contributionSnap.data().amount || 0) : 0;
+      const contributionsRef = query(
+        collection(db, "people", personDoc.id, "contributions"),
+        orderBy("month", "asc")
+      );
+      const contributionsSnap = await getDocs(contributionsRef);
+      const contributions = contributionsSnap.docs.map((item) => item.data());
+
+      const promised = getPromisedAmountForMonth(personData, month, contributions);
+      const monthContribution = contributions.find((item) => item?.month === month);
+      const paid = monthContribution ? Number(monthContribution.amount || 0) : 0;
       const pending = promised - paid;
 
       return {
