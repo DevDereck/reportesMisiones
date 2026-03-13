@@ -153,6 +153,88 @@ function indexToMonth(index) {
   return `${year}-${month}`;
 }
 
+function isValidMonthValue(monthValue) {
+  return /^\d{4}-\d{2}$/.test(String(monthValue || ""));
+}
+
+function getRegistrationMonthValue(person) {
+  const createdAtDate = person?.createdAt?.toDate?.();
+  if (createdAtDate instanceof Date && !Number.isNaN(createdAtDate.getTime())) {
+    const y = createdAtDate.getFullYear();
+    const m = String(createdAtDate.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  }
+  return getCurrentMonthValue();
+}
+
+function getStartMonthForPersonData(person) {
+  const startsFromRegistration = Boolean(person?.useRegistrationStart);
+  if (!startsFromRegistration) {
+    return getCurrentYearJanuaryValue();
+  }
+  return getRegistrationMonthValue(person);
+}
+
+function sanitizePromisedHistory(history) {
+  if (!Array.isArray(history)) return [];
+
+  const entriesByMonth = history.reduce((accumulator, entry) => {
+    if (!isValidMonthValue(entry?.month)) return accumulator;
+    const amount = Number(entry?.amount);
+    if (Number.isNaN(amount)) return accumulator;
+    accumulator[entry.month] = amount;
+    return accumulator;
+  }, {});
+
+  return Object.keys(entriesByMonth)
+    .sort()
+    .map((month) => ({ month, amount: entriesByMonth[month] }));
+}
+
+function getPromisedAmountForMonth(person, monthValue) {
+  const fallbackAmount = Number(person?.promisedAmount || 0);
+  const history = sanitizePromisedHistory(person?.promisedHistory);
+  if (!history.length || !isValidMonthValue(monthValue)) {
+    return fallbackAmount;
+  }
+
+  let promised = history[0].amount;
+  history.forEach((entry) => {
+    if (entry.month <= monthValue) {
+      promised = entry.amount;
+    }
+  });
+
+  return promised;
+}
+
+function buildPromisedHistoryForUpdate(person, newPromisedAmount) {
+  const previousPromisedAmount = Number(person?.promisedAmount || 0);
+  const normalizedNewAmount = Number(newPromisedAmount || 0);
+  const history = sanitizePromisedHistory(person?.promisedHistory);
+
+  if (previousPromisedAmount === normalizedNewAmount) {
+    return history;
+  }
+
+  const effectiveMonth = getCurrentMonthValue();
+  const nextHistory = [...history];
+
+  if (!nextHistory.length) {
+    const startMonth = getStartMonthForPersonData(person);
+    nextHistory.push({ month: startMonth, amount: previousPromisedAmount });
+  }
+
+  const currentMonthIndex = nextHistory.findIndex((entry) => entry.month === effectiveMonth);
+  if (currentMonthIndex >= 0) {
+    nextHistory[currentMonthIndex] = { month: effectiveMonth, amount: normalizedNewAmount };
+  } else {
+    nextHistory.push({ month: effectiveMonth, amount: normalizedNewAmount });
+  }
+
+  return sanitizePromisedHistory(nextHistory);
+}
+
 function getStartMonthForPerson() {
   const januaryMonth = getCurrentYearJanuaryValue();
   const startsFromRegistration = Boolean(selectedPerson?.useRegistrationStart);
@@ -183,7 +265,6 @@ function getAccumulatedPending() {
     return { totalPending: 0, startMonth: "", endMonth: "" };
   }
 
-  const promised = Number(selectedPerson.promisedAmount || 0);
   const startMonth = getStartMonthForPerson();
   const endMonth = getCurrentMonthValue();
 
@@ -201,6 +282,7 @@ function getAccumulatedPending() {
   let totalPending = 0;
   for (let index = startIndex; index <= finalIndex; index += 1) {
     const monthValue = indexToMonth(index);
+    const promised = getPromisedAmountForMonth(selectedPerson, monthValue);
     const paid = Number(paymentsByMonth[monthValue] || 0);
     totalPending += Math.max(promised - paid, 0);
   }
@@ -301,7 +383,7 @@ function renderContributions() {
 
   monthlyTableBody.innerHTML = "";
   selectedContributions.forEach((row) => {
-    const promised = Number(selectedPerson.promisedAmount || 0);
+    const promised = getPromisedAmountForMonth(selectedPerson, row.month);
     const paid = Number(row.amount || 0);
     const pending = promised - paid;
     const pendingLabel = pending > 0 ? formatCurrency(pending) : "";
@@ -429,14 +511,20 @@ personForm.addEventListener("submit", async (event) => {
 
   try {
     if (id) {
+      const personBeforeUpdate = peopleCache.find((item) => item.id === id) || selectedPerson || null;
+      const promisedHistory = buildPromisedHistoryForUpdate(personBeforeUpdate, payload.promisedAmount);
+
       await updateDoc(doc(db, "people", id), {
         ...payload,
+        promisedHistory,
         updatedAt: serverTimestamp()
       });
       showPersonMessage("Persona actualizada correctamente");
     } else {
+      const currentMonth = getCurrentMonthValue();
       const created = await addDoc(collection(db, "people"), {
         ...payload,
+        promisedHistory: [{ month: currentMonth, amount: payload.promisedAmount }],
         useRegistrationStart: true,
         createdAt: serverTimestamp()
       });
@@ -674,7 +762,7 @@ exportPdfBtn.addEventListener("click", async () => {
   pdf.setFont(undefined, "normal");
 
   const body = selectedContributions.map((row) => {
-    const promised = Number(selectedPerson.promisedAmount || 0);
+    const promised = getPromisedAmountForMonth(selectedPerson, row.month);
     const paid = Number(row.amount || 0);
     const pending = promised - paid;
     return [
