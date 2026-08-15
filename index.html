@@ -69,6 +69,13 @@
                 Abono inicial (opcional)
                 <input id="personInitialPayment" type="number" min="0" step="0.01" />
               </label>
+              <label>
+                Medio del abono inicial
+                <select id="personInitialMethod">
+                  <option value="sinpe">SINPE</option>
+                  <option value="sobre">Sobre</option>
+                </select>
+              </label>
 
               <div class="inline-actions">
                 <button class="btn btn-primary" type="submit">Guardar persona</button>
@@ -115,6 +122,13 @@
               Monto abonado
               <input id="monthlyAmount" type="number" min="0" step="0.01" required />
             </label>
+            <label>
+              Medio
+              <select id="monthlyMethod" required>
+                <option value="sinpe">SINPE</option>
+                <option value="sobre">Sobre</option>
+              </select>
+            </label>
             <button id="monthlySubmitBtn" class="btn btn-primary" type="submit">Guardar abono</button>
             <button id="cancelMonthlyEditBtn" class="btn btn-ghost hidden" type="button">Cancelar edición</button>
           </form>
@@ -127,6 +141,7 @@
                   <th>Prometido</th>
                   <th>Abonado</th>
                   <th>Pendiente</th>
+                  <th>Medio</th>
                   <th>Acciones</th>
                 </tr>
               </thead>

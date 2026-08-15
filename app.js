@@ -42,6 +42,7 @@ const personName = document.getElementById("personName");
 const personPhone = document.getElementById("personPhone");
 const personPromised = document.getElementById("personPromised");
 const personInitialPayment = document.getElementById("personInitialPayment");
+const personInitialMethod = document.getElementById("personInitialMethod");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const personMessage = document.getElementById("personMessage");
 
@@ -55,6 +56,7 @@ const detailMeta = document.getElementById("detailMeta");
 const monthlyForm = document.getElementById("monthlyForm");
 const monthlyMonth = document.getElementById("monthlyMonth");
 const monthlyAmount = document.getElementById("monthlyAmount");
+const monthlyMethod = document.getElementById("monthlyMethod");
 const monthlySubmitBtn = document.getElementById("monthlySubmitBtn");
 const cancelMonthlyEditBtn = document.getElementById("cancelMonthlyEditBtn");
 const monthlyTableBody = document.getElementById("monthlyTableBody");
@@ -118,6 +120,7 @@ function startMonthlyEdit(row) {
   monthlyMonth.value = row.month;
   monthlyMonth.disabled = true;
   monthlyAmount.value = Number(row.amount || 0);
+  monthlyMethod.value = row.method || "sinpe";
   monthlySubmitBtn.textContent = "Actualizar abono";
   cancelMonthlyEditBtn.classList.remove("hidden");
   monthlyAmount.focus();
@@ -225,6 +228,13 @@ function inferLegacyPromisedAmount(person, contributions, beforeMonth = "") {
 }
 
 function getPromisedAmountForMonth(person, monthValue) {
+  if (isValidMonthValue(monthValue)) {
+    const startMonth = getStartMonthForPersonData(person);
+    if (monthValue < startMonth) {
+      return 0;
+    }
+  }
+
   const fallbackAmount = Number(person?.promisedAmount || 0);
   const history = sanitizePromisedHistory(person?.promisedHistory);
   if (!isValidMonthValue(monthValue)) {
@@ -449,6 +459,7 @@ function renderContributions() {
       <td>${formatCurrency(promised)}</td>
       <td>${formatCurrency(paid)}</td>
       <td>${pendingLabel}</td>
+      <td>${row.method === 'sobre' ? 'Sobre' : 'SINPE'}</td>
       <td>
         <div class="inline-actions">
           <button class="btn btn-ghost" data-contribution-action="edit" data-month="${row.month}" type="button">Editar</button>
@@ -619,6 +630,7 @@ personForm.addEventListener("submit", async (event) => {
         await setDoc(doc(db, "people", created.id, "contributions", monthId), {
           month: monthId,
           amount: initialPayment,
+          method: personInitialMethod.value || "sinpe",
           updatedAt: serverTimestamp()
         });
       }
@@ -664,6 +676,7 @@ peopleList.addEventListener("click", async (event) => {
     personPhone.value = person.phone || "";
     personPromised.value = person.promisedAmount || "";
     personInitialPayment.value = "";
+    personInitialMethod.value = "sinpe";
     cancelEditBtn.classList.remove("hidden");
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
@@ -703,6 +716,7 @@ monthlyForm.addEventListener("submit", async (event) => {
 
   const month = monthlyMonth.value;
   const amount = Number(monthlyAmount.value);
+  const method = monthlyMethod.value;
 
   if (!month || Number.isNaN(amount) || amount < 0) return;
 
@@ -713,6 +727,7 @@ monthlyForm.addEventListener("submit", async (event) => {
       await setDoc(monthDocRef, {
         month: editingContributionMonth,
         amount,
+        method,
         updatedAt: serverTimestamp()
       });
 
@@ -728,6 +743,7 @@ monthlyForm.addEventListener("submit", async (event) => {
       await setDoc(monthDocRef, {
         month,
         amount: totalPaid,
+        method,
         updatedAt: serverTimestamp()
       });
 
@@ -849,12 +865,13 @@ exportPdfBtn.addEventListener("click", async () => {
       toMonthLabel(row.month),
       formatCurrencyForPdf(promised),
       formatCurrencyForPdf(paid),
-      pending > 0 ? formatCurrencyForPdf(pending) : ""
+      pending > 0 ? formatCurrencyForPdf(pending) : "",
+      row.method === 'sobre' ? 'Sobre' : 'SINPE'
     ];
   });
 
   pdf.autoTable({
-    head: [["Mes", "Prometido", "Abonado", "Pendiente"]],
+    head: [["Mes", "Prometido", "Abonado", "Pendiente", "Medio"]],
     body,
     startY: 73,
     styles: { fontSize: 10 },

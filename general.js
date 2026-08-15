@@ -70,6 +70,25 @@ function isValidMonthValue(monthValue) {
   return /^\d{4}-\d{2}$/.test(String(monthValue || ""));
 }
 
+function getRegistrationMonthValue(person) {
+  const createdAtDate = person?.createdAt?.toDate?.();
+  if (createdAtDate instanceof Date && !Number.isNaN(createdAtDate.getTime())) {
+    const y = createdAtDate.getFullYear();
+    const m = String(createdAtDate.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  }
+  return getCurrentMonthValue();
+}
+
+function getStartMonthForPersonData(person) {
+  const startsFromRegistration = Boolean(person?.useRegistrationStart);
+  if (!startsFromRegistration) {
+    const year = new Date().getFullYear();
+    return `${year}-01`;
+  }
+  return getRegistrationMonthValue(person);
+}
+
 function sanitizePromisedHistory(history) {
   if (!Array.isArray(history)) return [];
 
@@ -120,6 +139,13 @@ function inferLegacyPromisedAmount(person, contributions, beforeMonth = "") {
 }
 
 function getPromisedAmountForMonth(person, monthValue, contributions) {
+  if (isValidMonthValue(monthValue)) {
+    const startMonth = getStartMonthForPersonData(person);
+    if (monthValue < startMonth) {
+      return 0;
+    }
+  }
+
   const fallbackAmount = Number(person?.promisedAmount || 0);
   const history = sanitizePromisedHistory(person?.promisedHistory);
 

@@ -77,17 +77,24 @@ label {
   color: var(--c1);
 }
 
-input {
+input,
+select {
   height: 2.6rem;
   border: 1px solid rgba(12, 119, 121, 0.25);
   border-radius: 0.75rem;
   padding: 0 0.85rem;
   font-size: 0.95rem;
   color: var(--text);
+  background-color: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-input:focus {
+select {
+  cursor: pointer;
+}
+
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--c3);
   box-shadow: 0 0 0 3px rgba(59, 193, 168, 0.25);
