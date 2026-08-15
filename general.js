@@ -7,7 +7,7 @@ import {
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { firebaseConfig, adminAuthConfig } from "./firebase-config.js";
+import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -361,7 +361,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  generalWelcome.textContent = `Administrador: ${adminAuthConfig.username}`;
+  generalWelcome.textContent = `Administrador: ${user.email}`;
 
   const month = getCurrentMonthValue();
   generalMonth.value = month;

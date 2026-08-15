@@ -6,9 +6,3 @@ export const firebaseConfig = {
     messagingSenderId: "1007040409964",
     appId: "1:1007040409964:web:a50525738a714e80690349"
   };
-
-export const adminAuthConfig = {
-  username: "adminicpacrMisiones",
-  password: "Efesios220Misiones",
-  email: "adminicpacrMisiones@icpacrmisiones.com"
-};
