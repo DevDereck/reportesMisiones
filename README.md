@@ -1,6 +1,6 @@
 # Sistema de Misiones 
 
-Aplicación **sin frameworks** (solo JavaScript, HTML y CSS) para administrar ofrendas de misiones en la iglesia por persona y por mes.
+Aplicación para administrar ofrendas de misiones en la iglesia por persona y por mes.
 
 ## Funcionalidades
 
